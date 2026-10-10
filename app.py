@@ -31,12 +31,30 @@ AGE_MIN, AGE_MAX = 20, 90
 HR_MIN, HR_MAX = 60, 220
 DEFAULTS = {"in_age": 55, "in_hr": 150, "in_sex": 1, "in_cp": 3}
 
+# Facts reported by the notebook. Update these if the model is retrained.
+MODEL_FACTS = [
+    ("Model", "Support Vector Classifier (RBF kernel) inside a scaling pipeline"),
+    ("Training data", "Cleveland Heart Disease dataset, 303 patients"),
+    ("Inputs", "Age, sex, chest pain type, maximum heart rate"),
+    ("Test accuracy", "85.25% on 61 unseen patients"),
+    ("Cross-validation accuracy", "About 72% (5 folds on the training data)"),
+    ("Disease class precision / recall", "0.81 / 0.89"),
+]
+DATA_PATTERNS = [
+    ("Women", "25.8%"),
+    ("Men", "55.3%"),
+    ("Typical angina", "30.4%"),
+    ("Atypical angina", "18.0%"),
+    ("Non-anginal pain", "20.9%"),
+    ("No symptoms (asymptomatic)", "72.9%"),
+]
+
 # ---------------------------------------------------------------------------
 # Styling
 # One white card centered on a soft background, identical on phone and desktop.
 # Colors are set explicitly so the look does not depend on light or dark mode.
 #   ink #0F2236, deep teal #0B5D6B, bright teal #14A3B5, mist #EDF4F7
-#   disease present #B42318, no disease #0F766E
+#   heart disease #B42318, no heart disease #0F766E
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -78,7 +96,7 @@ header[data-testid="stHeader"] { background: transparent; height: 0; }
         linear-gradient(135deg, #0A2438 0%, var(--deep) 100%);
     border-radius: 14px;
     padding: 1.3rem 1.1rem 2.5rem;
-    margin-bottom: 1.3rem;
+    margin-bottom: .8rem;
 }
 .stApp div.hero h1 {
     font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1.2;
@@ -86,8 +104,16 @@ header[data-testid="stHeader"] { background: transparent; height: 0; }
 }
 .stApp div.hero p { color: #BBD6DE !important; font-size: .95rem; line-height: 1.45; margin: 0; }
 
+/* Tabs */
+[data-testid="stTabs"] button[role="tab"] { min-height: 46px; }
+[data-testid="stTabs"] button[role="tab"] p { color: var(--muted) !important; font-weight: 600; font-size: .98rem; }
+[data-testid="stTabs"] button[role="tab"][aria-selected="true"] p { color: var(--deep) !important; }
+[data-testid="stTabs"] [data-baseweb="tab-highlight"] { background-color: var(--teal) !important; }
+[data-testid="stTabs"] [data-baseweb="tab-border"] { background-color: var(--line) !important; }
+
 /* Text colors in the main area */
-[data-testid="stMain"] [data-testid="stMarkdownContainer"] p { color: var(--ink) !important; }
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stMain"] [data-testid="stMarkdownContainer"] li { color: var(--ink) !important; }
 [data-testid="stMain"] [data-testid="stWidgetLabel"] p { color: var(--ink) !important; font-weight: 600; font-size: .98rem; }
 [data-testid="stMain"] [data-testid="stAlert"] p,
 [data-testid="stMain"] [data-testid="stAlert"] div { color: var(--ink) !important; }
@@ -136,16 +162,44 @@ div.stButton > button:focus-visible { outline: 3px solid var(--teal); outline-of
 
 /* Result */
 @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes ring { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,.55); } 100% { box-shadow: 0 0 0 16px rgba(255,255,255,0); } }
+
 .verdict {
-    display: flex; align-items: center; gap: .9rem;
-    border-radius: 14px; padding: 1.2rem 1.2rem; color: #FFFFFF;
+    display: flex; align-items: center; gap: 1rem;
+    border-radius: 16px; padding: 1.3rem 1.3rem; color: #FFFFFF;
     margin-top: 1.1rem; animation: rise .4s ease-out;
 }
-.verdict.pos { background: linear-gradient(130deg, #8E1B12, var(--pos)); }
-.verdict.neg { background: linear-gradient(130deg, #0B5D52, var(--neg)); }
-.verdict .dot { width: 14px; height: 14px; border-radius: 50%; background: #FFFFFF; flex: none; box-shadow: 0 0 0 5px rgba(255,255,255,.28); }
-.verdict .t { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.6rem; line-height: 1.2; }
-.verdict .k { font-size: .78rem; letter-spacing: .06em; opacity: .9; margin-bottom: .1rem; }
+.verdict.pos { background: linear-gradient(130deg, #8E1B12, var(--pos)); box-shadow: 0 12px 28px rgba(180,35,24,.3); }
+.verdict.neg {
+    background: linear-gradient(130deg, #0A5A50, #12A08F);
+    box-shadow: 0 12px 30px rgba(15,118,110,.38);
+    border: 2px solid rgba(255,255,255,.5);
+}
+.verdict .icon {
+    flex: none; width: 46px; height: 46px; border-radius: 50%; background: #FFFFFF; position: relative;
+}
+.verdict.neg .icon { animation: ring 1.8s ease-out 3; }
+.verdict.neg .icon::after {            /* check mark */
+    content: ""; position: absolute; left: 16px; top: 9px; width: 11px; height: 21px;
+    border-right: 4px solid var(--neg); border-bottom: 4px solid var(--neg); transform: rotate(45deg);
+}
+.verdict.pos .icon::after {            /* exclamation mark */
+    content: "!"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    color: var(--pos); font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.7rem;
+}
+.verdict .t { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 1.55rem; line-height: 1.2; }
+.verdict.neg .t { font-size: 1.75rem; letter-spacing: .01em; }
+.verdict .k { font-size: .78rem; letter-spacing: .06em; opacity: .92; margin-bottom: .15rem; }
+
+/* About tab */
+.sec-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 1.15rem; color: var(--ink) !important; margin: 1.2rem 0 .2rem; }
+.sec-title.first { margin-top: .8rem; }
+.sec-note { color: var(--muted) !important; font-size: .9rem; line-height: 1.45; margin: 0 0 .6rem; }
+.facts { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.facts td { padding: .6rem .3rem; border-bottom: 1px solid #E4EDF1; color: var(--ink); vertical-align: top; }
+.facts td:first-child { color: var(--muted); width: 42%; padding-right: .8rem; }
+.facts td:last-child { font-weight: 600; }
+.facts tr:last-child td { border-bottom: none; }
 
 /* Larger screens */
 @media (min-width: 768px) {
@@ -153,10 +207,11 @@ div.stButton > button:focus-visible { outline: 3px solid var(--teal); outline-of
     .hero { padding: 1.8rem 1.7rem 2.9rem; }
     .stApp div.hero h1 { font-size: 2rem; }
     .stApp div.hero p { font-size: 1rem; }
-    .verdict .t { font-size: 1.9rem; }
+    .verdict .t { font-size: 1.8rem; }
+    .verdict.neg .t { font-size: 2rem; }
 }
 
-@media (prefers-reduced-motion: reduce) { .verdict { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .verdict, .verdict.neg .icon { animation: none; } }
 </style>
 """, unsafe_allow_html=True)
 
@@ -212,78 +267,111 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------------------------
-# Inputs
-# ---------------------------------------------------------------------------
-c1, c2 = st.columns(2, gap="large")
-with c1:
-    age = st.slider("Age (years)", AGE_MIN, AGE_MAX, key="in_age")
-with c2:
-    thalach = st.slider("Maximum heart rate (bpm)", HR_MIN, HR_MAX, key="in_hr")
-
-sex = st.radio(
-    "Sex",
-    options=list(SEX_OPTIONS.keys()),
-    format_func=lambda c: SEX_OPTIONS[c],
-    horizontal=True,
-    key="in_sex",
-)
-
-cp = st.radio(
-    "Chest pain type",
-    options=list(CP_OPTIONS.keys()),
-    format_func=lambda c: CP_OPTIONS[c],
-    horizontal=True,
-    key="in_cp",
-)
-
-st.write("")
-b1, b2 = st.columns([3, 1], gap="small")
-with b1:
-    predict_clicked = st.button("Predict", type="primary", key="btn_predict")
-with b2:
-    st.button("Reset", key="btn_reset", on_click=reset_inputs)
+tab_predict, tab_about = st.tabs(["Predict", "About the model"])
 
 # ---------------------------------------------------------------------------
-# Prediction and result
+# Predict tab
 # ---------------------------------------------------------------------------
-current_key = (age, sex, cp, thalach)
-error_message = None
-bundle = None
+with tab_predict:
+    st.write("")
+    c1, c2 = st.columns(2, gap="large")
+    with c1:
+        age = st.slider("Age (years)", AGE_MIN, AGE_MAX, key="in_age")
+    with c2:
+        thalach = st.slider("Maximum heart rate (bpm)", HR_MIN, HR_MAX, key="in_hr")
 
-try:
-    bundle = load_bundle()
-except Exception as exc:  # corrupt file, wrong structure, version problems
-    error_message = f"The model file could not be loaded. {type(exc).__name__}: {exc}"
+    sex = st.radio(
+        "Sex",
+        options=list(SEX_OPTIONS.keys()),
+        format_func=lambda c: SEX_OPTIONS[c],
+        horizontal=True,
+        key="in_sex",
+    )
 
-if predict_clicked and bundle is not None:
+    cp = st.radio(
+        "Chest pain type",
+        options=list(CP_OPTIONS.keys()),
+        format_func=lambda c: CP_OPTIONS[c],
+        horizontal=True,
+        key="in_cp",
+    )
+
+    st.write("")
+    b1, b2 = st.columns([3, 1], gap="small")
+    with b1:
+        predict_clicked = st.button("Predict", type="primary", key="btn_predict")
+    with b2:
+        st.button("Reset", key="btn_reset", on_click=reset_inputs)
+
+    # -----------------------------------------------------------------------
+    # Prediction and result
+    # -----------------------------------------------------------------------
+    current_key = (age, sex, cp, thalach)
+    error_message = None
+    bundle = None
+
     try:
-        with st.spinner("Predicting..."):
-            prediction = run_prediction(bundle, age, sex, cp, thalach)
-        st.session_state["last"] = {"key": current_key, "pred": prediction}
-    except Exception as exc:
-        error_message = f"The prediction could not be completed. {type(exc).__name__}: {exc}"
+        bundle = load_bundle()
+    except Exception as exc:  # corrupt file, wrong structure, version problems
+        error_message = f"The model file could not be loaded. {type(exc).__name__}: {exc}"
 
-if error_message:
-    st.error(error_message)
-elif bundle is None:
-    st.warning("Model file not found. Place `heart_disease_model.pkl` next to `app.py` and reload.")
-else:
-    last = st.session_state.get("last")
-    # Show the result only while it matches the current inputs
-    if last is not None and last["key"] == current_key:
-        positive = last["pred"] == 1
-        css = "pos" if positive else "neg"
-        text = "Disease present" if positive else "No disease"
-        st.markdown(f"""
+    if predict_clicked and bundle is not None:
+        try:
+            with st.spinner("Predicting..."):
+                prediction = run_prediction(bundle, age, sex, cp, thalach)
+            st.session_state["last"] = {"key": current_key, "pred": prediction}
+        except Exception as exc:
+            error_message = f"The prediction could not be completed. {type(exc).__name__}: {exc}"
+
+    if error_message:
+        st.error(error_message)
+    elif bundle is None:
+        st.warning("Model file not found. Place `heart_disease_model.pkl` next to `app.py` and reload.")
+    else:
+        last = st.session_state.get("last")
+        # Show the result only while it matches the current inputs
+        if last is not None and last["key"] == current_key:
+            positive = last["pred"] == 1
+            css = "pos" if positive else "neg"
+            text = "Heart disease present" if positive else "No heart disease"
+            st.markdown(f"""
 <div class="verdict {css}">
-<div class="dot"></div>
+<div class="icon"></div>
 <div>
 <div class="k">PREDICTION</div>
 <div class="t">{text}</div>
 </div>
 </div>
 """, unsafe_allow_html=True)
+
+# ---------------------------------------------------------------------------
+# About tab
+# ---------------------------------------------------------------------------
+with tab_about:
+    st.markdown('<div class="sec-title first">How it works</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-note">The four details you enter are scaled and passed to a Support Vector Classifier trained on historical patient records.</div>', unsafe_allow_html=True)
+    rows = "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in MODEL_FACTS)
+    st.markdown(f'<table class="facts">{rows}</table>', unsafe_allow_html=True)
+
+    st.markdown('<div class="sec-title">Patterns in the training data</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sec-note">Share of patients in the dataset who had heart disease, by group. These describe the data, not any individual.</div>', unsafe_allow_html=True)
+    rows = "".join(f"<tr><td>{k}</td><td>{v}</td></tr>" for k, v in DATA_PATTERNS)
+    st.markdown(f'<table class="facts">{rows}</table>', unsafe_allow_html=True)
+
+    st.markdown('<div class="sec-title">Limitations</div>', unsafe_allow_html=True)
+    st.markdown("""
+- Trained on only 303 patients from one study, so results carry real uncertainty.
+- Uses just four inputs. Many clinical factors are not considered.
+- The training data is about two thirds male.
+- The test score (85%) and the cross-validation score (72%) differ, so true accuracy is likely somewhere between them.
+""")
+
+    st.markdown('<div class="sec-title">Good to know</div>', unsafe_allow_html=True)
+    st.markdown("""
+- People with no chest pain complaint had the highest disease rate in this dataset. That is surprising, and it is a pattern in the data rather than a medical rule.
+- The result describes which group a profile resembles. It does not estimate a personal probability.
+- If you are worried about your heart health, speak to a doctor.
+""")
 
 st.write("")
 st.caption("Educational use only. Not a medical diagnosis.")
