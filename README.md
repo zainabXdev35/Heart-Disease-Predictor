@@ -2,7 +2,7 @@
 
 A machine-learning web app that predicts whether a patient is likely to have heart disease from **four** clinical inputs. Built with Python, scikit-learn and Streamlit.
 
-> **Live demo:** _paste your Streamlit URL here after deployment_ (`https://<your-app>.streamlit.app`)
+> **Live demo:** _paste your Streamlit URL here after deployment_ (`https://heart-disease-predictor-sys.streamlit.app/`)
 
 > **Disclaimer:** This is an educational project. It is **not** a medical device and must not be used for diagnosis. Always consult a doctor.
 
@@ -180,7 +180,7 @@ The app opens at `http://localhost:8501`.
 
 The full workflow (loading, preprocessing, feature selection, encoding, training, testing, application, feedback, deployment) is in `Heart_Disease_Prediction_System.ipynb`.
 
-1. Place `processed_cleveland.data` next to the notebook.
+1. Place `processed.cleveland.data` next to the notebook.
 2. Run all cells (**Kernel -> Restart & Run All**). This regenerates the three `.pkl` files.
 3. Copy the new `.pkl` files into this folder and pin your `scikit-learn` version in `requirements.txt`.
 
