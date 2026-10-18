@@ -2,7 +2,7 @@
 
 A machine-learning web app that predicts whether a patient is likely to have heart disease from **four** clinical inputs. Built with Python, scikit-learn and Streamlit.
 
-> **Live demo:** _paste your Streamlit URL here after deployment_ (`https://heart-disease-predictor-sys.streamlit.app/`)
+> **Live demo:** `https://heart-disease-predictor-sys.streamlit.app/`
 
 > **Disclaimer:** This is an educational project. It is **not** a medical device and must not be used for diagnosis. Always consult a doctor.
 
